@@ -2,15 +2,13 @@
 #include <iostream>
 using namespace std;
 
-struct Node
-{
+struct Node {
     int data;
     int height;
     Node* left;
     Node* right;
 
-    Node(int data)
-    {
+    Node(int data) {
         this->data = data;
         this->left = nullptr;
         this->right = nullptr;
@@ -18,137 +16,213 @@ struct Node
     }
 };
 
-int height(Node *N)
-{
-    if(N == nullptr)
-        return 0;
+class AVL {
+private:
+    Node* root;
 
-    return N->height;
-}
+    int height(Node* N) {
+        return N == nullptr ? 0 : N->height;
+    }
 
-Node *right_rotate(Node *y)
-{
-    Node *x = y->left;
-    Node *z = x->right;
+    int get_balance(Node* N) {
+        return N == nullptr ? 0 : height(N->left) - height(N->right);
+    }
 
-    x->right = y;
-    y->left = z;
+    Node* right_rotate(Node* y) {
+        Node* x = y->left;
+        Node* z = x->right;
 
-    y->height = 1 + max(height(y->left),height(y->right));
-    x->height = 1 + max(height(x->left),height(x->right));
-    return x;
-}
+        x->right = y;
+        y->left = z;
 
-Node *left_rotate(Node *x)
-{
-    Node *y = x->right;
-    Node *z = y->left;
+        y->height = 1 + max(height(y->left), height(y->right));
+        x->height = 1 + max(height(x->left), height(x->right));
 
-    y->left = x;
-    x->right = z;
+        return x;
+    }
 
-    y->height = 1 + max(height(y->left),height(y->right));
-    x->height = 1 + max(height(x->left),height(x->right));
-    return y;
-}
+    Node* left_rotate(Node* x) {
+        Node* y = x->right;
+        Node* z = y->left;  
 
-int get_balance(Node *N)
-{
-    if(N == nullptr)
-        return 0;
-    return height(N->left) - height(N->right);
-}
+        y->left = x;
+        x->right = z;
 
-Node *insert(Node *node, int data)
-{
-    if(node == nullptr)
-        return new Node(data);
-    
-    if(data < node->data)
-        node->left = insert (node->left, data);
-    else if(data > node->data)
-        node->right = insert (node->right, data);
-    else
+        x->height = 1 + max(height(x->left), height(x->right));
+        y->height = 1 + max(height(y->left), height(y->right));
+
+        return y;
+    }
+
+    Node* insert(Node* node, int data) {
+        if (node == nullptr)
+            return new Node(data);
+
+        if (data < node->data)
+            node->left = insert(node->left, data);
+        else if (data > node->data) 
+            node->right = insert(node->right, data);
+        else
+            return node; 
+
+        node->height = 1 + max(height(node->left), height(node->right));
+        int balance = get_balance(node);
+
+        // Left Left Case
+        if (balance > 1 && data < node->left->data)
+            return right_rotate(node);
+
+        // Left Right Case
+        if (balance > 1 && data > node->left->data) {
+            node->left = left_rotate(node->left);
+            return right_rotate(node);
+        }
+
+        // Right Right Case
+        if (balance < -1 && data > node->right->data)
+            return left_rotate(node);
+
+        // Right Left Case
+        if (balance < -1 && data < node->right->data) {
+            node->right = right_rotate(node->right);
+            return left_rotate(node);
+        }
+
         return node;
-
-    node->height = 1 + max (height(node->left), height(node->right));
-
-    int balance = get_balance(node);
-
-    //left left
-    if(balance > 1 && data < node->left->data)
-        return right_rotate(node);
-    
-    //left right  
-    if(balance > 1 && data > node->left->data)
-    {
-        node->left = left_rotate(node->left);
-        return right_rotate(node);
-    }   
-
-    //right right
-    if(balance < -1 && data > node->right->data)
-        return left_rotate(node);
-    
-    //right left    
-    if(balance > 1 && data < node->right->data)
-    {
-        node->right = left_rotate(node->right);
-        return right_rotate(node);
     }
 
-    return node;
-}
+    bool search(Node* node, int data) {
+        if (node == nullptr) return false;
+        if (data == node->data) return true;
 
-
-bool search(Node *root,int data)
-{
-    if(root == nullptr) return false;
-    if(data == root->data) return true;
-
-
-    if(data > root->data)
-        search(root->right, data);
-    else 
-        search(root->left, data);
-}
-
-Node* preorder(Node *root)
-{
-    if(root!=nullptr)
-    {
-        cout<<root->data<<" ";
-
-        preorder(root->left);
-        preorder(root->right);
-    
+        if (data < node->data)
+            return search(node->left, data);
+        else
+            return search(node->right, data);
     }
-        
-}
-// Driver Code 
-int main() { 
-    Node *root = nullptr; 
-    
-    // Constructing tree given in the above figure 
-    root = insert(root, 10); 
-    root = insert(root, 20); 
-    root = insert(root, 30); 
-    root = insert(root, 40); 
-    root = insert(root, 50); 
-    root = insert(root, 25); 
-    
-    /* The constructed AVL Tree would be 
-              30 
-            /   \ 
-          20     40 
-         /  \      \ 
-       10   25     50 
-    */
-    cout << "Preorder traversal : \n"; 
-    preorder(root); 
 
-    if(search(root,50))
-        cout<<"\nThe data we are searching is in the tree";
+    void preorder(Node* node) {
+        if (node != nullptr) {
+            cout << node->data << " ";
+            preorder(node->left);
+            preorder(node->right);
+        }
+    }
+    Node* min_value_node(Node* node) {
+        Node* current = node;
+        while (current->left != nullptr)
+            current = current->left;
+        return current;
+    }
+    
+    Node* delete_node(Node* node, int key) {
+        if (node == nullptr)
+            return node;
+    
+        // Standard BST deletion
+        if (key < node->data)
+            node->left = delete_node(node->left, key);
+        else if (key > node->data)
+            node->right = delete_node(node->right, key);
+        else {
+            // Node with one or no child
+            if ((node->left == nullptr) || (node->right == nullptr)) {
+                Node* temp = node->left ? node->left : node->right;
+    
+                if (temp == nullptr) {
+                    // No child
+                    temp = node;
+                    node = nullptr;
+                } else {
+                    // One child
+                    *node = *temp; 
+                }
+    
+                delete temp;
+            } else {
+                // Node with two children: get inorder successor
+                Node* temp = min_value_node(node->right);
+    
+                node->data = temp->data;
+                node->right = delete_node(node->right, temp->data);
+            }
+        }
+    
+        if (node == nullptr)
+            return node;
+    
+        node->height = 1 + max(height(node->left), height(node->right));
+
+        int balance = get_balance(node);
+
+        // LL
+        if (balance > 1 && get_balance(node->left) >= 0)
+            return right_rotate(node);
+    
+        // LR
+        if (balance > 1 && get_balance(node->left) < 0) {
+            node->left = left_rotate(node->left);
+            return right_rotate(node);
+        }
+    
+        // RR
+        if (balance < -1 && get_balance(node->right) <= 0)
+            return left_rotate(node);
+    
+        // RL
+        if (balance < -1 && get_balance(node->right) > 0) {
+            node->right = right_rotate(node->right);
+            return left_rotate(node);
+        }
+    
+        return node;
+    }
+    
+public:
+    AVL() {
+        root = nullptr;
+    }
+
+    void insert(int data) {
+        root = insert(root, data);
+    }
+
+    bool search(int data) {
+        return search(root, data);
+    }
+
+    void preorder() {
+        preorder(root);
+    }
+    
+    void remove(int key) {
+        root = delete_node(root, key);
+    }
+    
+};
+
+int main() {
+    AVL tree;
+
+    tree.insert(10);
+    tree.insert(20);
+    tree.insert(30);
+    tree.insert(40);
+    tree.insert(50);
+    tree.insert(25);
+
+    cout << "Preorder traversal:\n";
+    tree.preorder();
+
+    if (tree.search(50))
+        cout << "\nThe data we are searching is in the tree.";
     else
-        cout<<"\nThe data we are searching is not in the tree";
-} 
+        cout << "\nThe data we are searching is not in the tree.";
+    
+    tree.remove(40);  // Deleting a node
+
+    cout << "\nPreorder traversal after deleting 40:\n";
+    tree.preorder();
+    cout << "\n40 has been deleted from the tree.";
+}
+
