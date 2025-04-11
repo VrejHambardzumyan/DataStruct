@@ -219,7 +219,7 @@ int main() {
     else
         cout << "\nThe data we are searching is not in the tree.";
     
-    tree.remove(40);  // Deleting a node
+    tree.remove(40);
 
     cout << "\nPreorder traversal after deleting 40:\n";
     tree.preorder();
